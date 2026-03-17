@@ -1,0 +1,44 @@
+name: amusement_park_management_app
+description: Mobile application for amusement park operations and visitor experience.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fl_chart: ^0.68.0
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.2.1
+  http: ^1.2.2
+  image_picker: ^1.1.2
+  qr_flutter: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_icon.png
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: assets/images/app_icon.png
+    background_color: "#0F1220"
+    theme_color: "#FF6B57"
+  windows:
+    generate: true
+    image_path: assets/images/app_icon.png
+    icon_size: 256
