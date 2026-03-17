@@ -11,10 +11,20 @@ class AuthService {
   final String baseUrl;
   static const Duration _requestTimeout = Duration(seconds: 25);
 
+  Future<void> warmUpServer() async {
+    try {
+      await http.get(Uri.parse('$baseUrl/health')).timeout(const Duration(seconds: 20));
+    } catch (_) {
+      // Best-effort ping to wake sleeping hosted backends.
+    }
+  }
+
   Future<UserSession> login({
     required String email,
     required String password,
   }) async {
+    await warmUpServer();
+
     final response = await http
         .post(
           Uri.parse('$baseUrl/login'),
@@ -45,6 +55,8 @@ class AuthService {
     required int age,
     required String password,
   }) async {
+    await warmUpServer();
+
     final response = await http
         .post(
           Uri.parse('$baseUrl/register'),

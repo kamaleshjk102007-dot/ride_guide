@@ -48,6 +48,22 @@ class ApiService {
     return data.map((item) => QueueStatus.fromJson(item)).toList();
   }
 
+  Future<Map<String, dynamic>> updateQueue({
+    required String rideId,
+    required int peopleInQueue,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/queue'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'ride_id': rideId,
+        'people_in_queue': peopleInQueue,
+      }),
+    );
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<void> makePayment({
     required String ticketId,
     required String visitorId,

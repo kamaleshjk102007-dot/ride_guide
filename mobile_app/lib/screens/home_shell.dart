@@ -22,26 +22,36 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int currentIndex = 0;
   late final List<Widget> visitorPages;
-  late final List<Widget> adminPages;
+  late List<Widget> adminPages;
 
   @override
   void initState() {
     super.initState();
-    visitorPages = const [
-      HomeScreen(),
-      RideListScreen(),
-      MyTicketsScreen(),
-      QueueStatusScreen(),
-      ParkMapScreen(),
+    visitorPages = [
+      const HomeScreen(),
+      const RideListScreen(),
+      const MyTicketsScreen(),
+      const QueueStatusScreen(),
+      const ParkMapScreen(),
     ];
 
-    adminPages = const [
-      AdminDashboardScreen(),
-      RideManagementScreen(),
-      AnalyticsScreen(),
-      QueueStatusScreen(),
-      ParkMapScreen(),
+    adminPages = [
+      const AdminDashboardScreen(),
+      const RideManagementScreen(),
+      const AnalyticsScreen(),
+      const QueueStatusScreen(isAdmin: true),
+      const ParkMapScreen(),
     ];
+  }
+
+  void _handleTabTap(int value) {
+    if (widget.role == 'admin' && value == 0) {
+      adminPages[0] = AdminDashboardScreen(
+        key: ValueKey('admin-dashboard-${DateTime.now().millisecondsSinceEpoch}'),
+      );
+    }
+
+    setState(() => currentIndex = value);
   }
 
   @override
@@ -55,10 +65,10 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
-        onTap: (value) => setState(() => currentIndex = value),
+        onTap: _handleTabTap,
         items: widget.role == 'admin'
             ? const [
-                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+                BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
                 BottomNavigationBarItem(icon: Icon(Icons.attractions), label: 'Rides'),
                 BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Analytics'),
                 BottomNavigationBarItem(icon: Icon(Icons.queue_play_next), label: 'Queue'),
