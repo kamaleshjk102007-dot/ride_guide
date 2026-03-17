@@ -18,6 +18,7 @@ class _RideListScreenState extends State<RideListScreen> {
   final api = ApiService();
   List<Ride> rides = [];
   List<dynamic> queue = [];
+  bool loading = true;
 
   @override
   void initState() {
@@ -26,8 +27,12 @@ class _RideListScreenState extends State<RideListScreen> {
   }
 
   Future<void> loadData() async {
-    final rideData = await api.getRides();
-    final queueData = await api.getQueue();
+    final results = await Future.wait([
+      api.getRides(),
+      api.getQueue(),
+    ]);
+    final rideData = results[0] as List<Ride>;
+    final queueData = results[1] as List<dynamic>;
     const priorityOrder = [
       'Roller Coaster',
       'Ferris Wheel',
@@ -45,9 +50,13 @@ class _RideListScreenState extends State<RideListScreen> {
       return safeA.compareTo(safeB);
     });
 
+    if (!mounted) {
+      return;
+    }
     setState(() {
       rides = rideData;
       queue = queueData;
+      loading = false;
     });
   }
 
@@ -92,19 +101,25 @@ class _RideListScreenState extends State<RideListScreen> {
               ),
             ).animate().fadeIn().slideY(begin: 0.05),
             const SizedBox(height: 16),
-            ...rides.map(
-              (ride) => SizedBox(
-                height: 240,
-                child: RideCard(
-                  ride: ride,
-                  waitTime: waitForRide(ride.name),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+            if (loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              ...rides.map(
+                (ride) => SizedBox(
+                  height: 240,
+                  child: RideCard(
+                    ride: ride,
+                    waitTime: waitForRide(ride.name),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

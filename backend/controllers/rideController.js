@@ -1,4 +1,5 @@
 const Ride = require("../models/Ride");
+const Maintenance = require("../models/Maintenance");
 const QueueEntry = require("../models/Queue");
 
 const getRides = async (_req, res) => {
@@ -22,13 +23,54 @@ const createRide = async (req, res) => {
 
 const updateRide = async (req, res) => {
   try {
+    const existingRide = await Ride.findById(req.params.id);
+
+    if (!existingRide) {
+      return res.status(404).json({ message: "Ride not found." });
+    }
+
     const ride = await Ride.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
 
-    if (!ride) {
-      return res.status(404).json({ message: "Ride not found." });
+    const previousStatus = existingRide.status;
+    const nextStatus = ride.status;
+
+    if (previousStatus !== "Maintenance" && nextStatus === "Maintenance") {
+      const activeRecord = await Maintenance.findOne({
+        ride_id: ride._id,
+        status: { $in: ["Scheduled", "In Progress"] }
+      }).sort({ maintenance_date: -1 });
+
+      if (activeRecord) {
+        activeRecord.status = "In Progress";
+        activeRecord.notes = activeRecord.notes || "Maintenance triggered from Ride Management.";
+        await activeRecord.save();
+      } else {
+        await Maintenance.create({
+          ride_id: ride._id,
+          maintenance_date: new Date(),
+          technician: "Auto Assigned",
+          status: "In Progress",
+          notes: "Maintenance triggered from Ride Management."
+        });
+      }
+    }
+
+    if (previousStatus === "Maintenance" && nextStatus === "Active") {
+      const activeRecord = await Maintenance.findOne({
+        ride_id: ride._id,
+        status: { $in: ["Scheduled", "In Progress"] }
+      }).sort({ maintenance_date: -1 });
+
+      if (activeRecord) {
+        activeRecord.status = "Completed";
+        activeRecord.notes = activeRecord.notes
+          ? `${activeRecord.notes} Resolved from Ride Management.`
+          : "Resolved from Ride Management.";
+        await activeRecord.save();
+      }
     }
 
     res.json(ride);

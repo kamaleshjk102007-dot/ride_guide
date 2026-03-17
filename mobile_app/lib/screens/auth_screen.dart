@@ -66,10 +66,15 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) {
         return;
       }
+      final message = error.toString();
+      final readableMessage = message.contains('TimeoutException')
+          ? 'The server took too long to respond. If you are using the free hosted backend, please wait a few seconds and try again.'
+          : message.replaceFirst('Exception: ', '');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Login failed quickly: $error\nCheck backend, Wi-Fi, and the API IP address.',
+            readableMessage,
           ),
         ),
       );

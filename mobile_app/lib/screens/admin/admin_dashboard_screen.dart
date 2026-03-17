@@ -19,6 +19,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Map<String, dynamic>? analytics;
   List<dynamic> staff = [];
   List<dynamic> maintenance = [];
+  bool loading = true;
+  String? loadError;
 
   @override
   void initState() {
@@ -27,14 +29,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> loadData() async {
-    final dashboard = await api.getAnalytics();
-    final staffData = await api.getStaff();
-    final maintenanceData = await api.getMaintenance();
-    setState(() {
-      analytics = dashboard;
-      staff = staffData;
-      maintenance = maintenanceData;
-    });
+    try {
+      final dashboard = await api.getAnalytics();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        analytics = dashboard;
+        loadError = null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        loadError = 'Some admin insights are taking longer than expected.';
+      });
+    }
+
+    try {
+      final results = await Future.wait([
+        api.getStaff(),
+        api.getMaintenance(),
+      ]);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        staff = results[0] as List<dynamic>;
+        maintenance = results[1] as List<dynamic>;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        loadError ??= 'Some admin insights are taking longer than expected.';
+      });
+    } finally {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -134,16 +173,44 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  SizedBox(width: 160, child: StatCard(title: 'Revenue', value: 'INR ${cards['revenue'] ?? 0}', color: AppTheme.coral)),
-                  SizedBox(width: 160, child: StatCard(title: 'Visitors', value: '${cards['totalVisitors'] ?? 0}', color: AppTheme.aqua)),
-                  SizedBox(width: 160, child: StatCard(title: 'Rides', value: '${cards['totalRides'] ?? 0}', color: AppTheme.yellow)),
-                  SizedBox(width: 160, child: StatCard(title: 'Rating', value: '${cards['averageRating'] ?? 0}', color: Colors.purple)),
-                ],
-              ),
+              if (loadError != null) ...[
+                GlassPanel(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, color: AppTheme.coral),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(loadError!)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (loading)
+                GlassPanel(
+                  child: Column(
+                    children: const [
+                      SizedBox(height: 6),
+                      CircularProgressIndicator(),
+                      SizedBox(height: 14),
+                      Text('Loading operations overview...'),
+                    ],
+                  ),
+                )
+              else
+                GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.15,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    StatCard(title: 'Revenue', value: 'INR ${cards['revenue'] ?? 0}', color: AppTheme.coral),
+                    StatCard(title: 'Visitors', value: '${cards['totalVisitors'] ?? 0}', color: AppTheme.aqua),
+                    StatCard(title: 'Rides', value: '${cards['totalRides'] ?? 0}', color: AppTheme.yellow),
+                    StatCard(title: 'Rating', value: '${cards['averageRating'] ?? 0}', color: Colors.purple),
+                  ],
+                ),
               const SizedBox(height: 18),
               SizedBox(
                 height: 120,

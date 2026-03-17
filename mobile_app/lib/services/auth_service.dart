@@ -9,7 +9,7 @@ class AuthService {
   AuthService({this.baseUrl = AppConfig.apiBaseUrl});
 
   final String baseUrl;
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = Duration(seconds: 25);
 
   Future<UserSession> login({
     required String email,

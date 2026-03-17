@@ -108,4 +108,17 @@ class ApiService {
     final response = await http.get(Uri.parse('$baseUrl/maintenance'));
     return jsonDecode(response.body) as List<dynamic>;
   }
+
+  Future<Map<String, dynamic>> updateRide({
+    required String rideId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/rides/$rideId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }

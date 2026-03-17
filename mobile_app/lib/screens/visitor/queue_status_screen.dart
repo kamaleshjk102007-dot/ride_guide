@@ -18,6 +18,7 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
   final api = ApiService();
   List<dynamic> queue = [];
   Timer? refreshTimer;
+  bool loading = true;
 
   @override
   void initState() {
@@ -34,7 +35,13 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
 
   Future<void> loadQueue() async {
     final data = await api.getQueue();
-    setState(() => queue = data);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      queue = data;
+      loading = false;
+    });
   }
 
   @override
@@ -46,25 +53,32 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
           onRefresh: loadQueue,
           child: ListView(
             padding: const EdgeInsets.all(20),
-            children: queue
-                .map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: GlassPanel(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.rideName, style: Theme.of(context).textTheme.titleLarge),
-                          const SizedBox(height: 10),
-                          Text('People in queue: ${item.peopleInQueue}'),
-                          Text('Estimated wait: ${item.currentWaitTime} mins'),
-                          Text('Status: ${item.status}'),
-                        ],
+            children: loading
+                ? const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ]
+                : queue
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: GlassPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.rideName, style: Theme.of(context).textTheme.titleLarge),
+                              const SizedBox(height: 10),
+                              Text('People in queue: ${item.peopleInQueue}'),
+                              Text('Estimated wait: ${item.currentWaitTime} mins'),
+                              Text('Status: ${item.status}'),
+                            ],
+                          ),
+                        ).animate().fadeIn().slideX(begin: 0.05),
                       ),
-                    ).animate().fadeIn().slideX(begin: 0.05),
-                  ),
-                )
-                .toList(),
+                    )
+                    .toList(),
           ),
         ),
       ),

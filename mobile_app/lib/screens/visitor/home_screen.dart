@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final api = ApiService();
   Map<String, dynamic>? stats;
   List<dynamic> rides = [];
+  bool loading = true;
 
   static const List<_HighlightChipData> _highlightChips = [
     _HighlightChipData(label: 'Live queues', icon: Icons.graphic_eq_rounded),
@@ -37,11 +38,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> loadData() async {
-    final analytics = await api.getAnalytics();
-    final rideData = await api.getRides();
+    final results = await Future.wait([
+      api.getAnalytics(),
+      api.getRides(),
+    ]);
+    final analytics = results[0] as Map<String, dynamic>;
+    final rideData = results[1] as List<dynamic>;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       stats = analytics;
       rides = rideData;
+      loading = false;
     });
   }
 
@@ -158,40 +167,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
               GlassPanel(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.15,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    StatCard(
-                      title: 'Visitors',
-                      value: '${cards?['totalVisitors'] ?? 0}',
-                      color: AppTheme.coral,
-                      icon: Icons.groups_rounded,
-                    ),
-                    StatCard(
-                      title: 'Rides',
-                      value: '${cards?['totalRides'] ?? 0}',
-                      color: AppTheme.aqua,
-                      icon: Icons.attractions_rounded,
-                    ),
-                    StatCard(
-                      title: 'Tickets',
-                      value: '${cards?['activeTickets'] ?? 0}',
-                      color: AppTheme.yellow,
-                      icon: Icons.confirmation_number_rounded,
-                    ),
-                    StatCard(
-                      title: 'Avg Rating',
-                      value: '${cards?['averageRating'] ?? 0}',
-                      color: Colors.purple,
-                      icon: Icons.star_rounded,
-                    ),
-                  ],
-                ),
+                child: loading
+                    ? const SizedBox(
+                        height: 240,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.15,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          StatCard(
+                            title: 'Visitors',
+                            value: '${cards?['totalVisitors'] ?? 0}',
+                            color: AppTheme.coral,
+                            icon: Icons.groups_rounded,
+                          ),
+                          StatCard(
+                            title: 'Rides',
+                            value: '${cards?['totalRides'] ?? 0}',
+                            color: AppTheme.aqua,
+                            icon: Icons.attractions_rounded,
+                          ),
+                          StatCard(
+                            title: 'Tickets',
+                            value: '${cards?['activeTickets'] ?? 0}',
+                            color: AppTheme.yellow,
+                            icon: Icons.confirmation_number_rounded,
+                          ),
+                          StatCard(
+                            title: 'Avg Rating',
+                            value: '${cards?['averageRating'] ?? 0}',
+                            color: Colors.purple,
+                            icon: Icons.star_rounded,
+                          ),
+                        ],
+                      ),
               ).animate().fadeIn().slideY(begin: 0.08),
               const SizedBox(height: 20),
               GlassPanel(
@@ -253,7 +267,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              ...rides.take(3).map(
+              if (loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                ...rides.take(3).map(
                     (ride) {
                       final int rideIndex = rides.indexOf(ride);
                       final List<Color> accentColors = [

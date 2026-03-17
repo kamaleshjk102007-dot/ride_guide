@@ -21,29 +21,38 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int currentIndex = 0;
+  late final List<Widget> visitorPages;
+  late final List<Widget> adminPages;
+
+  @override
+  void initState() {
+    super.initState();
+    visitorPages = const [
+      HomeScreen(),
+      RideListScreen(),
+      MyTicketsScreen(),
+      QueueStatusScreen(),
+      ParkMapScreen(),
+    ];
+
+    adminPages = const [
+      AdminDashboardScreen(),
+      RideManagementScreen(),
+      AnalyticsScreen(),
+      QueueStatusScreen(),
+      ParkMapScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final visitorPages = [
-      const HomeScreen(),
-      const RideListScreen(),
-      const MyTicketsScreen(),
-      const QueueStatusScreen(),
-      const ParkMapScreen(),
-    ];
-
-    final adminPages = [
-      const AdminDashboardScreen(),
-      const RideManagementScreen(),
-      const AnalyticsScreen(),
-      const QueueStatusScreen(),
-      const ParkMapScreen(),
-    ];
-
     final pages = widget.role == 'admin' ? adminPages : visitorPages;
 
     return Scaffold(
-      body: pages[currentIndex],
+      body: IndexedStack(
+        index: currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (value) => setState(() => currentIndex = value),
