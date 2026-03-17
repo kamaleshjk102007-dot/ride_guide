@@ -25,10 +25,10 @@ class _AuthScreenState extends State<AuthScreen> {
   bool loading = false;
 
   final nameController = TextEditingController();
-  final emailController = TextEditingController(text: 'rahul@gmail.com');
+  final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final ageController = TextEditingController();
-  final passwordController = TextEditingController(text: 'visitor123');
+  final passwordController = TextEditingController();
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
@@ -153,7 +153,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
                         TextFormField(
                           controller: emailController,
-                          decoration: const InputDecoration(labelText: 'Email'),
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            hintText: isLogin ? 'rahul@gmail.com' : 'Enter your email',
+                          ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -169,7 +172,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         TextFormField(
                           controller: passwordController,
                           obscureText: true,
-                          decoration: const InputDecoration(labelText: 'Password'),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            hintText: isLogin ? 'visitor123' : 'Minimum 6 characters',
+                          ),
                           validator: (value) => value == null || value.length < 6 ? 'Minimum 6 characters' : null,
                         ),
                         const SizedBox(height: 20),
