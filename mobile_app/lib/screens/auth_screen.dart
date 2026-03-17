@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import '../widgets/glass_panel.dart';
 import '../widgets/gradient_background.dart';
 import 'home_shell.dart';
@@ -14,8 +15,12 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  static final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+  static final RegExp _phoneRegex = RegExp(r'^[0-9+\-\s]{7,15}$');
+
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
+  final _sessionService = SessionService();
   bool isLogin = true;
   bool loading = false;
 
@@ -49,6 +54,8 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) {
         return;
       }
+
+      await _sessionService.saveSession(session);
 
       Navigator.pushReplacementNamed(
         context,
@@ -101,7 +108,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isLogin ? 'Welcome back to the park' : 'Create your visitor profile',
+                          isLogin ? 'Welcome to the park' : 'Create your visitor profile',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 24),
@@ -109,12 +116,22 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextFormField(
                             controller: nameController,
                             decoration: const InputDecoration(labelText: 'Name'),
-                            validator: (value) => value == null || value.isEmpty ? 'Enter your name' : null,
+                            validator: (value) => value == null || value.trim().isEmpty ? 'Enter your name' : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: phoneController,
                             decoration: const InputDecoration(labelText: 'Phone'),
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Enter your phone number';
+                              }
+                              if (!_phoneRegex.hasMatch(value.trim())) {
+                                return 'Enter a valid phone number';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -137,7 +154,16 @@ class _AuthScreenState extends State<AuthScreen> {
                         TextFormField(
                           controller: emailController,
                           decoration: const InputDecoration(labelText: 'Email'),
-                          validator: (value) => value == null || value.isEmpty ? 'Enter your email' : null,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Enter your email';
+                            }
+                            if (!_emailRegex.hasMatch(value.trim())) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 12),
                         TextFormField(

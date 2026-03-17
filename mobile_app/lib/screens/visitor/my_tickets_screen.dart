@@ -15,10 +15,21 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   final api = ApiService();
   final visitorController = TextEditingController();
   List<dynamic> tickets = [];
+  bool loading = false;
 
   Future<void> loadTickets() async {
+    if (visitorController.text.trim().isEmpty) {
+      return;
+    }
+    setState(() => loading = true);
     final data = await api.getTickets(visitorController.text.trim());
-    setState(() => tickets = data);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      tickets = data;
+      loading = false;
+    });
   }
 
   @override
@@ -26,49 +37,58 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('My Tickets')),
       body: GradientBackground(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            GlassPanel(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: visitorController,
-                    decoration: const InputDecoration(labelText: 'Enter Visitor ID'),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: loadTickets,
-                      child: const Text('Load booked tickets'),
+        child: RefreshIndicator(
+          onRefresh: loadTickets,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              GlassPanel(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: visitorController,
+                      decoration: const InputDecoration(labelText: 'Enter Visitor ID'),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: loadTickets,
+                        child: Text(loading ? 'Loading...' : 'Load booked tickets'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ...tickets.map(
-              (ticket) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: GlassPanel(
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(ticket.rideName),
-                    subtitle: Text(ticket.bookingDate),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('INR ${ticket.price.toStringAsFixed(0)}'),
-                        Text(ticket.status),
-                      ],
+              const SizedBox(height: 16),
+              if (loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                ...tickets.map(
+                  (ticket) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: GlassPanel(
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(ticket.rideName),
+                        subtitle: Text(ticket.bookingDate),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('INR ${ticket.price.toStringAsFixed(0)}'),
+                            Text(ticket.status),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

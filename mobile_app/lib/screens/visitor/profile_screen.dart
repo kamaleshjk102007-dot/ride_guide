@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../models/user_session.dart';
+import '../../services/session_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/gradient_background.dart';
@@ -17,11 +19,71 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
+  final SessionService _sessionService = SessionService();
   String fullName = 'Rahul Kumar';
   String username = 'rahul_kumar';
   String email = 'rahul@gmail.com';
   String phone = '+91 9876543210';
+  int? age;
   File? profileImage;
+  UserSession? _currentSession;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final session = await _sessionService.loadSession();
+    if (!mounted || session == null) {
+      return;
+    }
+
+    final savedImagePath = session.profileImagePath;
+    final savedImage = savedImagePath != null && savedImagePath.isNotEmpty ? File(savedImagePath) : null;
+
+    setState(() {
+      _currentSession = session;
+      fullName = session.name.isEmpty ? fullName : session.name;
+      email = session.email.isEmpty ? email : session.email;
+      phone = (session.phone == null || session.phone!.isEmpty) ? phone : session.phone!;
+      age = session.age;
+      username = _buildUsername(fullName, email);
+      if (savedImage != null && savedImage.existsSync()) {
+        profileImage = savedImage;
+      }
+    });
+  }
+
+  String _buildUsername(String name, String emailAddress) {
+    final sanitizedName = name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    if (sanitizedName.isNotEmpty) {
+      return sanitizedName;
+    }
+
+    return emailAddress.split('@').first;
+  }
+
+  Future<void> _persistProfile() async {
+    final session = _currentSession;
+    if (session == null) {
+      return;
+    }
+
+    await _sessionService.saveSession(
+      UserSession(
+        token: session.token,
+        role: session.role,
+        userId: session.userId,
+        name: fullName,
+        email: email,
+        phone: phone,
+        age: age,
+        profileImagePath: profileImage?.path,
+      ),
+    );
+  }
 
   Future<void> _editProfile() async {
     final nameController = TextEditingController(text: fullName);
@@ -94,9 +156,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () async {
                         final picked = await _picker.pickImage(source: ImageSource.gallery);
                         if (picked != null) {
+                          final imageFile = File(picked.path);
                           setState(() {
-                            profileImage = File(picked.path);
+                            profileImage = imageFile;
                           });
+                          await _persistProfile();
+                          if (!mounted) {
+                            return;
+                          }
                         }
                       },
                       icon: const Icon(Icons.photo_library_outlined),
@@ -106,11 +173,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           setState(() {
                             fullName = nameController.text.trim().isEmpty ? fullName : nameController.text.trim();
-                            username = fullName.toLowerCase().replaceAll(' ', '_');
+                            username = _buildUsername(fullName, email);
                           });
+                          await _persistProfile();
+                          if (!mounted) {
+                            return;
+                          }
                           Navigator.pop(context);
                         },
                         child: const Text('Save Changes'),
@@ -183,9 +254,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 14),
                   _infoTile(Icons.badge_outlined, 'Full Name', fullName),
-                  _infoTile(Icons.alternate_email_rounded, 'Username', username),
                   _infoTile(Icons.email_outlined, 'Email Address', email),
                   _infoTile(Icons.phone_outlined, 'Phone Number', phone),
+                  _infoTile(Icons.cake_outlined, 'Age', age?.toString() ?? 'Not available'),
                 ],
               ),
             ),
@@ -216,7 +287,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6B57),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
+                        await _sessionService.clearSession();
+                        if (!mounted) {
+                          return;
+                        }
                         Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
                       },
                       icon: const Icon(Icons.logout_rounded),

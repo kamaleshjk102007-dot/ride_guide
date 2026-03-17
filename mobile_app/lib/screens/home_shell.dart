@@ -21,7 +21,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int currentIndex = 0;
-  late final List<Widget> visitorPages;
+  late List<Widget> visitorPages;
   late List<Widget> adminPages;
 
   @override
@@ -48,6 +48,24 @@ class _HomeShellState extends State<HomeShell> {
     if (widget.role == 'admin' && value == 0) {
       adminPages[0] = AdminDashboardScreen(
         key: ValueKey('admin-dashboard-${DateTime.now().millisecondsSinceEpoch}'),
+      );
+    }
+
+    if (widget.role != 'admin' && value == 1) {
+      visitorPages[1] = RideListScreen(
+        key: ValueKey('visitor-rides-${DateTime.now().millisecondsSinceEpoch}'),
+      );
+    }
+
+    if (widget.role != 'admin' && value == 2) {
+      visitorPages[2] = MyTicketsScreen(
+        key: ValueKey('visitor-tickets-${DateTime.now().millisecondsSinceEpoch}'),
+      );
+    }
+
+    if (widget.role != 'admin' && value == 3) {
+      visitorPages[3] = QueueStatusScreen(
+        key: ValueKey('visitor-queue-${DateTime.now().millisecondsSinceEpoch}'),
       );
     }
 

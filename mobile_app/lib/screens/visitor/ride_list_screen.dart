@@ -74,53 +74,56 @@ class _RideListScreenState extends State<RideListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Ride List')),
       body: GradientBackground(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(26),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFEFE7), Color(0xFFEAFBFF)],
+        child: RefreshIndicator(
+          onRefresh: loadData,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFEFE7), Color(0xFFEAFBFF)],
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ride Explorer',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Featured lineup: Roller Coaster, Ferris Wheel, Bumper Cars, Drop Tower, Water Splash Ride, and Carousel.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ).animate().fadeIn().slideY(begin: 0.05),
-            const SizedBox(height: 16),
-            if (loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else
-              ...rides.map(
-                (ride) => SizedBox(
-                  height: 240,
-                  child: RideCard(
-                    ride: ride,
-                    waitTime: waitForRide(ride.name),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ride Explorer',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Pull down to refresh and see the latest ride status, queues, and admin updates.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn().slideY(begin: 0.05),
+              const SizedBox(height: 16),
+              if (loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                ...rides.map(
+                  (ride) => SizedBox(
+                    height: 240,
+                    child: RideCard(
+                      ride: ride,
+                      waitTime: waitForRide(ride.name),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

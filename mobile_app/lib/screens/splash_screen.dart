@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'auth_screen.dart';
+import '../services/session_service.dart';
+import 'home_shell.dart';
 import '../widgets/gradient_background.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,17 +14,34 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final _sessionService = SessionService();
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AuthScreen()),
-        );
-      }
-    });
+    _boot();
+  }
+
+  Future<void> _boot() async {
+    await Future.delayed(const Duration(seconds: 2));
+    final session = await _sessionService.loadSession();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (session != null && session.token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomeShell(role: session.role)),
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+    );
   }
 
   @override

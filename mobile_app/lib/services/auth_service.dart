@@ -45,6 +45,8 @@ class AuthService {
       userId: user['_id'] ?? '',
       name: user['name'] ?? '',
       email: user['email'] ?? '',
+      phone: user['phone'],
+      age: user['age'],
     );
   }
 
@@ -83,6 +85,8 @@ class AuthService {
       userId: user['_id'] ?? '',
       name: user['name'] ?? '',
       email: user['email'] ?? '',
+      phone: user['phone'],
+      age: user['age'],
     );
   }
 }

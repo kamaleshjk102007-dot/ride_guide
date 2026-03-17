@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../services/api_service.dart';
+import '../../services/session_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/gradient_background.dart';
@@ -16,6 +17,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final api = ApiService();
+  final sessionService = SessionService();
   Map<String, dynamic>? analytics;
   List<dynamic> staff = [];
   List<dynamic> maintenance = [];
@@ -127,7 +129,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         _ActionChip(
                           icon: Icons.logout_rounded,
                           label: 'Logout',
-                          onTap: () {
+                          onTap: () async {
+                            await sessionService.clearSession();
+                            if (!mounted) {
+                              return;
+                            }
                             Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
                           },
                         ),
@@ -420,7 +426,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               leading: const Icon(Icons.power_settings_new_rounded, color: Colors.redAccent),
               title: const Text('Logout'),
               subtitle: const Text('Return to the login screen'),
-              onTap: () {
+              onTap: () async {
+                await sessionService.clearSession();
+                if (!context.mounted) {
+                  return;
+                }
                 Navigator.pop(context);
                 Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
               },
