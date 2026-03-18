@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Visitor = require("../models/Visitor");
 const { signToken } = require("../utils/token");
+const { assignVisitorIdentity, getNextVisitorIdentity } = require("../utils/visitorIdentity");
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[0-9+\-\s]{7,15}$/;
 
@@ -40,7 +41,11 @@ const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
+    const identity = await getNextVisitorIdentity();
     const visitor = await Visitor.create({
+      visitor_id: identity.visitor_id,
+      visitor_sequence: identity.visitor_sequence,
+      status: "Active",
       name: normalizedName,
       email: normalizedEmail,
       phone: normalizedPhone,
@@ -58,11 +63,17 @@ const register = async (req, res) => {
         email: visitor.email,
         phone: visitor.phone,
         age: visitor.age,
+        visitor_id: visitor.visitor_id,
+        status: visitor.status,
         role: "visitor"
       }
     });
   } catch (error) {
-    res.status(400).json({ message: "Unable to register visitor.", error: error.message });
+    const statusCode = error?.code === 11000 ? 400 : 400;
+    const message = error?.code === 11000
+      ? "Visitor account already exists."
+      : "Unable to register visitor.";
+    res.status(statusCode).json({ message, error: error.message });
   }
 };
 
@@ -101,6 +112,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
+    await assignVisitorIdentity(visitor);
     const token = signToken({ id: visitor._id, role: "visitor" });
 
     res.json({
@@ -111,6 +123,8 @@ const login = async (req, res) => {
         email: visitor.email,
         phone: visitor.phone,
         age: visitor.age,
+        visitor_id: visitor.visitor_id,
+        status: visitor.status,
         role: "visitor"
       }
     });

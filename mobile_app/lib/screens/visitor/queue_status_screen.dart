@@ -3,12 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../models/ride.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/gradient_background.dart';
 import '../../widgets/ride_image.dart';
-import 'ride_details_screen.dart';
 
 class QueueStatusScreen extends StatefulWidget {
   const QueueStatusScreen({
@@ -79,7 +77,9 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Track queue lengths, spot slower attractions, and tap a ride for full details.',
+                      widget.isAdmin
+                          ? 'Track queue lengths and tap a ride to edit queue and status.'
+                          : 'Track queue lengths and wait times in a simple read-only view.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -95,8 +95,9 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
                 ...queue.map(
                   (item) => Padding(
                     padding: const EdgeInsets.only(bottom: 14),
-                    child: GestureDetector(
-                      onTap: () => widget.isAdmin ? _openQueueEditor(item) : _openRideDetails(item),
+                    child: InkWell(
+                      onTap: widget.isAdmin ? () => _openQueueEditor(item) : null,
+                      borderRadius: BorderRadius.circular(28),
                       child: GlassPanel(
                         padding: EdgeInsets.zero,
                         child: Column(
@@ -138,11 +139,11 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 14),
-                                      Row(
-                                        children: [
-                                          _queueSignalChip(
-                                            label: item.currentWaitTime <= 8
-                                                ? 'Fast access'
+                                  Row(
+                                    children: [
+                                      _queueSignalChip(
+                                        label: item.currentWaitTime <= 8
+                                            ? 'Fast access'
                                             : item.currentWaitTime <= 15
                                                 ? 'Moderate line'
                                                 : 'Peak line',
@@ -151,24 +152,24 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
                                             : item.currentWaitTime <= 15
                                                 ? const Color(0xFFFFF4DD)
                                                 : const Color(0xFFFFECE7),
-                                          ),
-                                          if (widget.isAdmin) ...[
-                                            const SizedBox(width: 10),
-                                            _queueSignalChip(
-                                              label: 'Edit queue',
-                                              color: const Color(0xFFEAF3FF),
-                                            ),
-                                          ],
-                                          const Spacer(),
-                                          Text(
-                                            widget.isAdmin ? 'Tap to edit' : 'Tap for details',
-                                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                                  color: Colors.black54,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                        ],
                                       ),
+                                      if (widget.isAdmin) ...[
+                                        const SizedBox(width: 10),
+                                        _queueSignalChip(
+                                          label: 'Edit queue',
+                                          color: const Color(0xFFEAF3FF),
+                                        ),
+                                      ],
+                                      const Spacer(),
+                                      Text(
+                                        widget.isAdmin ? 'Tap to edit' : 'View only',
+                                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                              color: Colors.black54,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -182,25 +183,6 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _openRideDetails(dynamic item) {
-    final ride = Ride(
-      id: item.rideId,
-      name: item.rideName,
-      type: item.rideType,
-      description: '${item.rideName} is currently running with a live queue.',
-      image: item.rideImage,
-      minAge: 0,
-      capacity: item.capacity,
-      duration: item.duration,
-      status: item.status,
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
     );
   }
 

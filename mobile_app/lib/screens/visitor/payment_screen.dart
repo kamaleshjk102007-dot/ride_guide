@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/gradient_background.dart';
 
@@ -22,26 +23,47 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final api = ApiService();
+  final sessionService = SessionService();
   late final TextEditingController ticketController;
-  late final TextEditingController visitorController;
   late final TextEditingController amountController;
   String paymentMethod = 'UPI';
+  String visitorId = '';
 
   @override
   void initState() {
     super.initState();
     ticketController = TextEditingController(text: widget.ticketId);
-    visitorController = TextEditingController(text: widget.visitorId);
     amountController = TextEditingController(text: widget.amount == 0 ? '0' : widget.amount.toStringAsFixed(0));
+    visitorId = widget.visitorId;
+    _prefillVisitorId();
+  }
+
+  Future<void> _prefillVisitorId() async {
+    final session = await sessionService.loadSession();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      visitorId = widget.visitorId.isNotEmpty ? widget.visitorId : (session?.visitorId ?? '');
+    });
   }
 
   Future<void> _pay() async {
+    if (visitorId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visitor ID is missing. Please log in again.')),
+      );
+      return;
+    }
+
     await api.makePayment(
       ticketId: ticketController.text.trim(),
-      visitorId: visitorController.text.trim(),
+      visitorId: visitorId,
       amount: double.parse(amountController.text.trim()),
       paymentMethod: paymentMethod,
     );
+    await sessionService.saveTicketVisitorId(visitorId);
 
     if (!mounted) {
       return;
@@ -64,7 +86,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
               children: [
                 TextField(controller: ticketController, decoration: const InputDecoration(labelText: 'Ticket ID')),
                 const SizedBox(height: 12),
-                TextField(controller: visitorController, decoration: const InputDecoration(labelText: 'Visitor ID')),
+                TextField(
+                  controller: TextEditingController(text: visitorId),
+                  readOnly: true,
+                  decoration: const InputDecoration(labelText: 'Visitor ID'),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountController,

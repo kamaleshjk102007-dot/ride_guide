@@ -43,10 +43,12 @@ class AuthService {
       token: data['token'] ?? '',
       role: user['role'] ?? 'visitor',
       userId: user['_id'] ?? '',
+      visitorId: user['visitor_id'] ?? '',
       name: user['name'] ?? '',
       email: user['email'] ?? '',
       phone: user['phone'],
       age: user['age'],
+      status: user['status'],
     );
   }
 
@@ -83,10 +85,12 @@ class AuthService {
       token: data['token'] ?? '',
       role: user['role'] ?? 'visitor',
       userId: user['_id'] ?? '',
+      visitorId: user['visitor_id'] ?? '',
       name: user['name'] ?? '',
       email: user['email'] ?? '',
       phone: user['phone'],
       age: user['age'],
+      status: user['status'],
     );
   }
 }

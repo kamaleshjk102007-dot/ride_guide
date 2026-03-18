@@ -1,6 +1,8 @@
 class Ticket {
   Ticket({
     required this.id,
+    required this.visitorId,
+    required this.visitorName,
     required this.rideName,
     required this.bookingDate,
     required this.price,
@@ -12,6 +14,8 @@ class Ticket {
   });
 
   final String id;
+  final String visitorId;
+  final String visitorName;
   final String rideName;
   final String bookingDate;
   final double price;
@@ -23,6 +27,8 @@ class Ticket {
 
   factory Ticket.fromJson(Map<String, dynamic> json, {String qrCodeData = ''}) => Ticket(
         id: json['_id'] ?? '',
+        visitorId: json['visitor_code'] ?? json['visitor_id']?['visitor_id'] ?? '',
+        visitorName: json['visitor_id']?['name'] ?? '',
         rideName: json['ride_id']?['ride_name'] ?? 'Ride',
         bookingDate: json['booking_date'] ?? '',
         price: (json['price'] ?? 0).toDouble(),

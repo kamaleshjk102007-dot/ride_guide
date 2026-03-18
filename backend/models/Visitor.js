@@ -4,6 +4,8 @@ const phoneRegex = /^[0-9+\-\s]{7,15}$/;
 
 const visitorSchema = new mongoose.Schema(
   {
+    visitor_id: { type: String, required: true, unique: true, trim: true },
+    visitor_sequence: { type: Number, required: true, unique: true },
     name: { type: String, required: true, trim: true },
     email: {
       type: String,
@@ -19,6 +21,7 @@ const visitorSchema = new mongoose.Schema(
       trim: true,
       match: [phoneRegex, "Enter a valid phone number."]
     },
+    status: { type: String, enum: ["Active", "Expired"], default: "Active" },
     age: { type: Number, required: true, min: 1 },
     password: { type: String, required: true, minlength: 6, select: false },
     tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: "Ticket" }]

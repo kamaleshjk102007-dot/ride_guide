@@ -28,9 +28,9 @@ const seed = async () => {
   const password = await bcrypt.hash("visitor123", 10);
 
   const visitors = await Visitor.insertMany([
-    { name: "Rahul Kumar", email: "rahul@gmail.com", phone: "9876543210", age: 22, password },
-    { name: "Ananya Singh", email: "ananya@gmail.com", phone: "9811122233", age: 19, password },
-    { name: "Vikram Das", email: "vikram@gmail.com", phone: "9988776655", age: 31, password }
+    { visitor_id: "VST1001", visitor_sequence: 1001, name: "Rahul Kumar", email: "rahul@gmail.com", phone: "9876543210", status: "Active", age: 22, password },
+    { visitor_id: "VST1002", visitor_sequence: 1002, name: "Ananya Singh", email: "ananya@gmail.com", phone: "9811122233", status: "Active", age: 19, password },
+    { visitor_id: "VST1003", visitor_sequence: 1003, name: "Vikram Das", email: "vikram@gmail.com", phone: "9988776655", status: "Active", age: 31, password }
   ]);
 
   const rides = await Ride.insertMany([
@@ -97,10 +97,10 @@ const seed = async () => {
   ]);
 
   const tickets = await Ticket.insertMany([
-    { visitor_id: visitors[0]._id, ride_id: rides[0]._id, booking_date: new Date(), price: 450, status: "Booked" },
-    { visitor_id: visitors[1]._id, ride_id: rides[1]._id, booking_date: new Date(), price: 320, status: "Booked" },
-    { visitor_id: visitors[2]._id, ride_id: rides[2]._id, booking_date: new Date(), price: 280, status: "Booked" },
-    { visitor_id: visitors[0]._id, ride_id: rides[4]._id, booking_date: new Date(), price: 300, status: "Booked" }
+    { visitor_id: visitors[0]._id, visitor_code: visitors[0].visitor_id, ride_id: rides[0]._id, booking_date: new Date(), price: 450, status: "Booked" },
+    { visitor_id: visitors[1]._id, visitor_code: visitors[1].visitor_id, ride_id: rides[1]._id, booking_date: new Date(), price: 320, status: "Booked" },
+    { visitor_id: visitors[2]._id, visitor_code: visitors[2].visitor_id, ride_id: rides[2]._id, booking_date: new Date(), price: 280, status: "Booked" },
+    { visitor_id: visitors[0]._id, visitor_code: visitors[0].visitor_id, ride_id: rides[4]._id, booking_date: new Date(), price: 300, status: "Booked" }
   ]);
 
   visitors[0].tickets = [tickets[0]._id, tickets[3]._id];
@@ -109,10 +109,10 @@ const seed = async () => {
   await Promise.all(visitors.map((visitor) => visitor.save()));
 
   await Payment.insertMany([
-    { ticket_id: tickets[0]._id, visitor_id: visitors[0]._id, amount: 450, payment_method: "UPI", payment_date: new Date() },
-    { ticket_id: tickets[1]._id, visitor_id: visitors[1]._id, amount: 320, payment_method: "Card", payment_date: new Date() },
-    { ticket_id: tickets[2]._id, visitor_id: visitors[2]._id, amount: 280, payment_method: "Wallet", payment_date: new Date(Date.now() - 86400000) },
-    { ticket_id: tickets[3]._id, visitor_id: visitors[0]._id, amount: 300, payment_method: "Cash", payment_date: new Date() }
+    { ticket_id: tickets[0]._id, visitor_id: visitors[0]._id, visitor_code: visitors[0].visitor_id, amount: 450, payment_method: "UPI", payment_date: new Date() },
+    { ticket_id: tickets[1]._id, visitor_id: visitors[1]._id, visitor_code: visitors[1].visitor_id, amount: 320, payment_method: "Card", payment_date: new Date() },
+    { ticket_id: tickets[2]._id, visitor_id: visitors[2]._id, visitor_code: visitors[2].visitor_id, amount: 280, payment_method: "Wallet", payment_date: new Date(Date.now() - 86400000) },
+    { ticket_id: tickets[3]._id, visitor_id: visitors[0]._id, visitor_code: visitors[0].visitor_id, amount: 300, payment_method: "Cash", payment_date: new Date() }
   ]);
 
   await Staff.insertMany([

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const ticketSchema = new mongoose.Schema(
   {
     visitor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Visitor", required: true },
+    visitor_code: { type: String, required: true, trim: true, index: true },
     ride_id: { type: mongoose.Schema.Types.ObjectId, ref: "Ride", required: true },
     booking_date: { type: Date, default: Date.now },
     price: { type: Number, required: true, min: 0 },

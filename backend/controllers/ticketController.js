@@ -5,12 +5,24 @@ const Visitor = require("../models/Visitor");
 const QueueEntry = require("../models/Queue");
 const { estimateWaitTime } = require("../utils/queueUtils");
 const queueEmitter = require("../utils/queueEmitter");
+const mongoose = require("mongoose");
+
+const buildVisitorLookup = (visitorId) => {
+  const lookup = [{ visitor_id: visitorId }];
+  if (mongoose.Types.ObjectId.isValid(visitorId)) {
+    lookup.push({ _id: visitorId });
+  }
+  return lookup;
+};
 
 const createTicket = async (req, res) => {
   try {
     const { visitor_id, ride_id, price } = req.body;
 
-    const [visitor, ride] = await Promise.all([Visitor.findById(visitor_id), Ride.findById(ride_id)]);
+    const [visitor, ride] = await Promise.all([
+      Visitor.findOne({ $or: buildVisitorLookup(visitor_id) }),
+      Ride.findById(ride_id)
+    ]);
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found." });
     }
@@ -25,7 +37,8 @@ const createTicket = async (req, res) => {
     }
 
     const ticket = await Ticket.create({
-      visitor_id,
+      visitor_id: visitor._id,
+      visitor_code: visitor.visitor_id,
       ride_id,
       price,
       booking_date: new Date(),
@@ -46,14 +59,15 @@ const createTicket = async (req, res) => {
     const qrCode = await QRCode.toDataURL(
       JSON.stringify({
         ticketId: ticket._id,
+        visitorId: visitor.visitor_id,
         visitor: visitor.name,
         ride: ride.ride_name
       })
     );
 
     const ticketWithRide = await Ticket.findById(ticket._id)
-      .populate("ride_id", "ride_name type image")
-      .populate("visitor_id", "name email");
+      .populate("ride_id", "ride_name type image duration")
+      .populate("visitor_id", "name email visitor_id status");
 
     res.status(201).json({ ticket: ticketWithRide, qrCode });
   } catch (error) {
@@ -63,8 +77,17 @@ const createTicket = async (req, res) => {
 
 const getVisitorTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.find({ visitor_id: req.params.visitor_id })
+    const visitor = await Visitor.findOne({ $or: buildVisitorLookup(req.params.visitor_id) }).select("_id visitor_id name status");
+
+    if (!visitor) {
+      return res.json([]);
+    }
+
+    const tickets = await Ticket.find({
+      $or: [{ visitor_id: visitor._id }, { visitor_code: visitor.visitor_id }]
+    })
       .populate("ride_id", "ride_name type image status duration")
+      .populate("visitor_id", "name email visitor_id status")
       .sort({ booking_date: -1 });
 
     res.json(tickets);

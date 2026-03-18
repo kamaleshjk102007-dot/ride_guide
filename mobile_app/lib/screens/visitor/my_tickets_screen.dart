@@ -19,9 +19,9 @@ class MyTicketsScreen extends StatefulWidget {
 class _MyTicketsScreenState extends State<MyTicketsScreen> {
   final api = ApiService();
   final sessionService = SessionService();
-  final visitorController = TextEditingController();
   List<Ticket> tickets = [];
   bool loading = false;
+  String visitorId = '';
 
   @override
   void initState() {
@@ -30,22 +30,29 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Future<void> _prefillVisitor() async {
+    final savedTicketVisitorId = await sessionService.loadTicketVisitorId();
     final session = await sessionService.loadSession();
-    if (!mounted || session == null || session.userId.isEmpty) {
+    final preferredVisitorId = (session?.visitorId.isNotEmpty ?? false)
+        ? session!.visitorId
+        : (savedTicketVisitorId ?? '');
+
+    if (!mounted || preferredVisitorId.isEmpty) {
       return;
     }
 
-    visitorController.text = session.userId;
+    setState(() {
+      visitorId = preferredVisitorId;
+    });
     await loadTickets();
   }
 
   Future<void> loadTickets() async {
-    if (visitorController.text.trim().isEmpty) {
+    if (visitorId.trim().isEmpty) {
       return;
     }
     setState(() => loading = true);
     try {
-      final data = await api.getTickets(visitorController.text.trim());
+      final data = await api.getTickets(visitorId.trim());
       if (!mounted) {
         return;
       }
@@ -74,20 +81,21 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Generate visitor tickets',
+                      'My entry tickets',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Enter a visitor ID or use your saved login to load beautifully formatted ride passes.',
+                      'Your entry passes are linked automatically to the visitor ID assigned to your account.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 14),
                     TextField(
-                      controller: visitorController,
+                      controller: TextEditingController(text: visitorId),
+                      readOnly: true,
                       decoration: const InputDecoration(
-                        labelText: 'Enter Visitor ID',
-                        hintText: 'Visitor MongoDB ID',
+                        labelText: 'Visitor ID',
+                        hintText: 'Auto-generated visitor ID',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -96,7 +104,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: loading ? null : loadTickets,
                         icon: const Icon(Icons.confirmation_number_rounded),
-                        label: Text(loading ? 'Loading...' : 'Generate tickets'),
+                        label: Text(loading ? 'Loading...' : 'Load tickets'),
                       ),
                     ),
                   ],
@@ -120,7 +128,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Book a ride first, then your generated passes will appear here.',
+                        'Book a ride first, then your generated entry passes will appear here.',
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -298,10 +306,7 @@ class _TicketPass extends StatelessWidget {
                           ),
                           child: Text(
                             ticket.status,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TextStyle(color: statusColor, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -351,10 +356,7 @@ class _TicketPass extends StatelessWidget {
                                     child: QrImageView(
                                       data: ticket.qrCodeData,
                                       version: QrVersions.auto,
-                                      eyeStyle: const QrEyeStyle(
-                                        color: Color(0xFF1E1E1E),
-                                        eyeShape: QrEyeShape.square,
-                                      ),
+                                      eyeStyle: const QrEyeStyle(color: Color(0xFF1E1E1E), eyeShape: QrEyeShape.square),
                                       dataModuleStyle: const QrDataModuleStyle(
                                         color: Color(0xFF1E1E1E),
                                         dataModuleShape: QrDataModuleShape.square,
@@ -376,12 +378,30 @@ class _TicketPass extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
+                                        'Visitor ID: ${ticket.visitorId}',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                              color: const Color(0xFF214E96),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
                                         'Ticket No: $ticketNo',
                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               color: const Color(0xFF214E96),
                                               fontWeight: FontWeight.w700,
                                             ),
                                       ),
+                                      if (ticket.visitorName.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          ticket.visitorName,
+                                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                color: Colors.black87,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ],
                                       const SizedBox(height: 8),
                                       Wrap(
                                         spacing: 8,
@@ -440,9 +460,7 @@ class _TicketPass extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(
                     'Non-transferable • No refunds • Valid only for the booked ride window',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.black54,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                   ),
                 ],
               ),

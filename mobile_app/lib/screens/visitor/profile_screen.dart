@@ -21,9 +21,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   final SessionService _sessionService = SessionService();
   String fullName = 'Rahul Kumar';
-  String username = 'rahul_kumar';
   String email = 'rahul@gmail.com';
   String phone = '+91 9876543210';
+  String visitorId = 'VST----';
+  String accountStatus = 'Active';
   int? age;
   File? profileImage;
   UserSession? _currentSession;
@@ -49,20 +50,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       email = session.email.isEmpty ? email : session.email;
       phone = (session.phone == null || session.phone!.isEmpty) ? phone : session.phone!;
       age = session.age;
-      username = _buildUsername(fullName, email);
+      visitorId = session.visitorId.isEmpty ? visitorId : session.visitorId;
+      accountStatus = (session.status == null || session.status!.isEmpty) ? accountStatus : session.status!;
       if (savedImage != null && savedImage.existsSync()) {
         profileImage = savedImage;
       }
     });
-  }
-
-  String _buildUsername(String name, String emailAddress) {
-    final sanitizedName = name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-    if (sanitizedName.isNotEmpty) {
-      return sanitizedName;
-    }
-
-    return emailAddress.split('@').first;
   }
 
   Future<void> _persistProfile() async {
@@ -76,10 +69,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         token: session.token,
         role: session.role,
         userId: session.userId,
+        visitorId: session.visitorId,
         name: fullName,
         email: email,
         phone: phone,
         age: age,
+        status: session.status,
         profileImagePath: profileImage?.path,
       ),
     );
@@ -176,7 +171,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () async {
                           setState(() {
                             fullName = nameController.text.trim().isEmpty ? fullName : nameController.text.trim();
-                            username = _buildUsername(fullName, email);
                           });
                           await _persistProfile();
                           if (!mounted) {
@@ -257,6 +251,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _infoTile(Icons.email_outlined, 'Email Address', email),
                   _infoTile(Icons.phone_outlined, 'Phone Number', phone),
                   _infoTile(Icons.cake_outlined, 'Age', age?.toString() ?? 'Not available'),
+                  _infoTile(Icons.confirmation_number_outlined, 'Visitor ID', visitorId),
+                  _infoTile(Icons.verified_user_outlined, 'Status', accountStatus),
                 ],
               ),
             ),

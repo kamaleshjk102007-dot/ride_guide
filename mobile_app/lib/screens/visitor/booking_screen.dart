@@ -3,6 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/ride.dart';
 import '../../services/api_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/glass_panel.dart';
 import '../../widgets/gradient_background.dart';
 import 'payment_screen.dart';
@@ -18,20 +19,58 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   final api = ApiService();
-  final visitorIdController = TextEditingController();
+  final sessionService = SessionService();
   final priceController = TextEditingController(text: '450');
   String qrPayload = '';
   String createdTicketId = '';
+  String visitorId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillVisitorId();
+  }
+
+  Future<void> _prefillVisitorId() async {
+    final session = await sessionService.loadSession();
+    final savedVisitorId = await sessionService.loadTicketVisitorId();
+    final resolvedVisitorId = (session?.visitorId.isNotEmpty ?? false)
+        ? session!.visitorId
+        : (savedVisitorId ?? '');
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      visitorId = resolvedVisitorId;
+    });
+  }
+
+  @override
+  void dispose() {
+    priceController.dispose();
+    super.dispose();
+  }
 
   Future<void> _bookTicket() async {
+    if (visitorId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visitor ID is missing. Please log in again.')),
+      );
+      return;
+    }
+
     final response = await api.bookTicket(
-      visitorId: visitorIdController.text.trim(),
+      visitorId: visitorId,
       rideId: widget.ride.id,
       price: double.parse(priceController.text.trim()),
     );
 
+    await sessionService.saveTicketVisitorId(visitorId);
+
     setState(() {
-      qrPayload = 'Ticket:${response['ticket']?['_id'] ?? ''}|Ride:${widget.ride.name}|Visitor:${visitorIdController.text.trim()}';
+      qrPayload = 'Ticket:${response['ticket']?['_id'] ?? ''}|Ride:${widget.ride.name}|Visitor:$visitorId';
       createdTicketId = response['ticket']?['_id'] ?? '';
     });
   }
@@ -48,9 +87,16 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Create ride ticket', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Create ride ticket',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 16),
-                  TextField(controller: visitorIdController, decoration: const InputDecoration(labelText: 'Visitor ID')),
+                  TextField(
+                    controller: TextEditingController(text: visitorId),
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Visitor ID'),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: priceController,
@@ -73,7 +119,10 @@ class _BookingScreenState extends State<BookingScreen> {
               GlassPanel(
                 child: Column(
                   children: [
-                    Text('QR Ride Ticket', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      'QR Ride Ticket',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 16),
                     QrImageView(data: qrPayload, size: 220),
                     const SizedBox(height: 16),
@@ -85,7 +134,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         MaterialPageRoute(
                           builder: (_) => PaymentScreen(
                             ticketId: createdTicketId,
-                            visitorId: visitorIdController.text.trim(),
+                            visitorId: visitorId,
                             amount: double.tryParse(priceController.text.trim()) ?? 0,
                           ),
                         ),
